@@ -6,6 +6,14 @@
 
 RUI_I2C_ST st = {0};
 
+/////// USER DEFINED VARIABLES
+RUI_TIMER_ST tempCheckTimer;
+RUI_TIMER_ST startTimer;
+bool tempCheckTimerTriggered = false;
+bool startTimerTriggered = false;
+float temp = 0.0;
+float humidity = 0.0;
+
 void sensor_on(void)
 {
 
@@ -33,16 +41,50 @@ void sensor_off(void)
     lps22hb_mode(0);
 }
 
+/// USER DEFINED FUNCTIONS ///
+
+void tempCheckTimerCallback(void) {
+	tempCheckTimerTriggered = true;
+}
+
+void startTimerCallback(void) {
+	startTimerTriggered = true;
+}
+
 void main(void)
 {
-    //system init 
-    rui_sensor_register_callback(sensor_on,sensor_off);
-    rui_init();
-    float temp = 0.0;
-    float humidity = 0.0;
-	   
-    while(1)
-    {
+	//system init 
+	rui_sensor_register_callback(sensor_on,sensor_off);
+	rui_init();
+	
+	uint8_t state = 0;
+	while (1) {
+		switch(state) {
+			case 0:
+				// In this state we will start the timer to wait for startup
+				RUI_LOG_PRINTF("Starting timer...");
+				rui_timer_init(&startTimer, startTimerCallback);
+				rui_timer_setvalue(&startTimer, 5000);
+				rui_timer_start(&startTimer);
+				state = 1;
+				break;
+			case 1:
+				// In this state we wait for the timer in order to start up
+				if (startTimerTriggered) {
+					state = 2;
+				}
+				break;
+			case 2:
+				// In this state we begin starting up
+				RUI_LOG_PRINTF("Starting up...");
+				break;
+			default:
+				RUI_LOG_PRINTF("An error occurred!");
+				break;
+		}
+		rui_running();
+	}
+	    /*
         //do your work here, then call rui_device_sleep(1) to sleep
 	SHTC3_GetTempAndHumi(&temp,&humidity);
 	RUI_LOG_PRINTF("temperature = %f", temp);
@@ -65,5 +107,5 @@ void main(void)
         rui_device_sleep(1);
         //here run system work and do not modify
         rui_running();
-    }
+	*/
 }
