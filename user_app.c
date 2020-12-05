@@ -15,13 +15,23 @@ const uint16_t BATTERY_LEVEL_CHECK_TIMER_LENGTH = 30000;
 const uint16_t ALERT_TIMER_LENGTH = 5000;
 const uint16_t LAST_SIGNAL_TIMER = 15000;
 
-enum stateList {TURN_ON, WAITING_TO_STARTUP, STARTUP, DIAGNOSTICS, MALFUNCTION, IDLE, TEMP_CHECK};
+enum stateList {TURN_ON, WAITING_TO_STARTUP, STARTUP, DIAGNOSTICS, MALFUNCTION, IDLE, TEMP_CHECK, LOCATION_CHECK};
 
 /////// USER DEFINED VARIABLES
 RUI_TIMER_ST tempCheckTimer;
 RUI_TIMER_ST startTimer;
+RUI_TIMER_ST diagnosticsTimer;
+RUI_TIMER_ST locationCheckTimer;
+RUI_TIMER_ST batteryLevelCheckTimer;
+RUI_TIMER_ST alertTimer;
+RUI_TIMER_ST lastSignalTimer;
 bool tempCheckTimerTriggered = false;
 bool startTimerTriggered = false;
+bool diagnosticsTimerTriggered = false;
+bool locationCheckTimerTriggered = false;
+bool batteryLevelCheckTimerTriggered = false;
+bool alertTimerTriggered = false;
+bool lastSignalTimerTriggered = false;
 float temp = 0.0;
 float humidity = 0.0;
 
@@ -62,6 +72,26 @@ void startTimerCallback(void) {
 	startTimerTriggered = true;
 }
 
+void diagnosticsTimerCallback(void) {
+	diagnosticsTimerTriggered = true;
+}
+
+void locationCheckTimerCallback(void) {
+	locationCheckTimerTriggered = true;
+}
+
+void batteryLevelCheckTimerCallback(void) {
+	batteryLevelCheckTimerTriggered = true;
+}
+
+void alarmTimerCallback(void) {
+	alarmTimerTriggered = true;
+}
+
+void lastSignalTimerCallback(void) {
+	lastSignalTimerTriggered = true;
+}
+
 void main(void)
 {
 	//system init 
@@ -76,7 +106,7 @@ void main(void)
 		switch(state) {
 			case TURN_ON:
 				// In this state we will start the timer to wait for startup
-				RUI_LOG_PRINTF("Starting timer...");
+				RUI_LOG_PRINTF("Waiting to boot up");
 				rui_timer_init(&startTimer, startTimerCallback);
 				rui_timer_setvalue(&startTimer, INIT_TIMER_LENGTH);
 				rui_timer_start(&startTimer);
@@ -89,15 +119,19 @@ void main(void)
 				}
 				break;
 			case STARTUP:
+				tempCheckTimer.timer_mode = RUI_TIMER_MODE_REPEATED;
 				rui_timer_init(&tempCheckTimer, tempCheckTimerCallback);
 				rui_timer_setvalue(&tempCheckTimer, TEMP_CHECK_TIMER_LENGTH);
 				rui_timer_start(&tempCheckTimer);
-				tempCheckTimer.timer_mode = RUI_TIMER_MODE_REPEATED;
+				locationCheckTimer.timer_mode = RUI_TIMER_MODE_REPEATED;
+				rui_timer_init(&locationCheckTimer, locationCheckTimerCallback);
+				rui_timer_setvalue(&locationCheckTimer, LOCATION_CHECK_TIMER_LENGTH);
+				rui_timer_start(&locationCheckTimer);
 				state = DIAGNOSTICS;
 			case DIAGNOSTICS:
 				// In this state we run the diagnostics
 				RUI_LOG_PRINTF("Running diagnostics...");
-				if (true) {
+				if (true) { // TODO: implement the actual diagnostics test
 					RUI_LOG_PRINTF("Diagnostics passed.");
 					state = IDLE;
 				}
@@ -115,10 +149,21 @@ void main(void)
 				if (tempCheckTimerTriggered) {
 					state = TEMP_CHECK;
 				}
+				else if (diagnosticsTimerTriggered) {
+					state = DIAGNOSTICS;
+				}
+				else if (locationCheckTimerTriggered) {
+					state = LOCATION_CHECK;
+				}
 				break;
 			case TEMP_CHECK:
-				RUI_LOG_PRINF("Checking the temperature...");
+				RUI_LOG_PRINTF("Checking the temperature...");
 				tempCheckTimerTriggered = false;
+				state = IDLE;
+				break;
+			case LOCATION_CHECK:
+				RUI_LOG_PRINTF("Checking the location for movement...");
+				locationCheckTimerTriggered = false;
 				state = IDLE;
 				break;
 			default:
