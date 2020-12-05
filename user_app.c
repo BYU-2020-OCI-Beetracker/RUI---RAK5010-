@@ -60,6 +60,7 @@ void main(void)
 	uint8_t state = 0;
 	
 	RUI_LOG_PRINTF("Initilization complete. Beginning user programmed sequence.");
+	rui_running();
 	while (1) {
 		switch(state) {
 			case 0:
