@@ -6,6 +6,17 @@
 
 RUI_I2C_ST st = {0};
 
+/////// USER DEFINED CONSTANTS
+const uint16_t INIT_TIMER_LENGTH = 5000;
+const uint16_t TEMP_CHECK_TIMER_LENGTH = 5000;
+const uint16_t DIAGNOSTICS_TIMER_LENGTH = 30000;
+const uint16_t LOCATION_CHECK_TIMER_LENGTH = 10000;
+const uint16_t BATTERY_LEVEL_CHECK_TIMER_LENGTH = 30000;
+const uint16_t ALERT_TIMER_LENGTH = 5000;
+const uint16_t LAST_SIGNAL_TIMER = 15000;
+
+enum stateList {TURN_ON, WAITING_TO_STARTUP, STARTUP, DIAGNOSTICS, MALFUNCTION, IDLE, TEMP_CHECK};
+
 /////// USER DEFINED VARIABLES
 RUI_TIMER_ST tempCheckTimer;
 RUI_TIMER_ST startTimer;
@@ -57,29 +68,58 @@ void main(void)
 	rui_sensor_register_callback(sensor_on,sensor_off);
 	rui_init();
 	
-	uint8_t state = 0;
+	enum stateList state = TURN_ON;
 	
 	RUI_LOG_PRINTF("Initilization complete. Beginning user programmed sequence.");
 	rui_running();
 	while (1) {
 		switch(state) {
-			case 0:
+			case TURN_ON:
 				// In this state we will start the timer to wait for startup
 				RUI_LOG_PRINTF("Starting timer...");
 				rui_timer_init(&startTimer, startTimerCallback);
-				rui_timer_setvalue(&startTimer, 5000);
+				rui_timer_setvalue(&startTimer, INIT_TIMER_LENGTH);
 				rui_timer_start(&startTimer);
-				state = 1;
+				state = WAITING_TO_STARTUP;
 				break;
-			case 1:
+			case WAITING_TO_STARTUP:
 				// In this state we wait for the timer in order to start up
 				if (startTimerTriggered) {
-					state = 2;
+					state = STARTUP;
 				}
 				break;
-			case 2:
-				// In this state we begin starting up
-				RUI_LOG_PRINTF("Starting up...");
+			case STARTUP:
+				rui_timer_init(&tempCheckTimer, tempCheckTimerCallback);
+				rui_timer_setvalue(&tempCheckTimer, TEMP_CHECK_TIMER_LENGTH);
+				rui_timer_start(&tempCheckTimer);
+				tempCheckTimer.timer_mode = RUI_TIMER_MODE_REPEATED;
+				state = DIAGNOSTICS;
+			case DIAGNOSTICS:
+				// In this state we run the diagnostics
+				RUI_LOG_PRINTF("Running diagnostics...");
+				if (true) {
+					RUI_LOG_PRINTF("Diagnostics passed.");
+					state = IDLE;
+				}
+				else {
+					RUI_LOG_PRINTF("Diagnostics failed.");
+					state = MALFUNCTION;
+				}
+				break;
+			case MALFUNCTION:
+				// In this state the diagnostics have failed.
+				RUI_LOG_PRINTF("Sending malfunction notification");
+				state = IDLE;
+				break;
+			case IDLE:
+				if (tempCheckTimerTriggered) {
+					state = TEMP_CHECK;
+				}
+				break;
+			case TEMP_CHECK:
+				RUI_LOG_PRINF("Checking the temperature...");
+				tempCheckTimerTriggered = false;
+				state = IDLE;
 				break;
 			default:
 				RUI_LOG_PRINTF("An error occurred!");
