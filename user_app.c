@@ -84,8 +84,8 @@ void batteryLevelCheckTimerCallback(void) {
 	batteryLevelCheckTimerTriggered = true;
 }
 
-void alarmTimerCallback(void) {
-	alarmTimerTriggered = true;
+void alertTimerCallback(void) {
+	alertTimerTriggered = true;
 }
 
 void lastSignalTimerCallback(void) {
@@ -119,10 +119,15 @@ void main(void)
 				}
 				break;
 			case STARTUP:
+				// In this state we will begin all of the timers for the sensors
 				tempCheckTimer.timer_mode = RUI_TIMER_MODE_REPEATED;
 				rui_timer_init(&tempCheckTimer, tempCheckTimerCallback);
 				rui_timer_setvalue(&tempCheckTimer, TEMP_CHECK_TIMER_LENGTH);
 				rui_timer_start(&tempCheckTimer);
+				diagnosticsTimer.timer_mode = RUI_TIMER_MODE_REPEATED;
+				rui_timer_init(&diagnosticsTimer, diagnosticsTimerCallback);
+				rui_timer_setvalue(&diagnosticsTimer, DIAGNOSTICS_TIMER_LENGTH);
+				rui_timer_start(&diagnosticsTimer);
 				locationCheckTimer.timer_mode = RUI_TIMER_MODE_REPEATED;
 				rui_timer_init(&locationCheckTimer, locationCheckTimerCallback);
 				rui_timer_setvalue(&locationCheckTimer, LOCATION_CHECK_TIMER_LENGTH);
