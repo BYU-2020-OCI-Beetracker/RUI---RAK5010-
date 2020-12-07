@@ -6,16 +6,22 @@
 
 RUI_I2C_ST st = {0};
 
+////// FOR TESTING PURPOSES ONLY
+bool alertOnPlease = false;
+bool diagnosticsPassPlease = false;
+bool batteryLowPlease = false;
+
 /////// USER DEFINED CONSTANTS
 const uint16_t INIT_TIMER_LENGTH = 5000;
 const uint16_t TEMP_CHECK_TIMER_LENGTH = 5000;
 const uint16_t DIAGNOSTICS_TIMER_LENGTH = 30000;
 const uint16_t LOCATION_CHECK_TIMER_LENGTH = 10000;
 const uint16_t BATTERY_LEVEL_CHECK_TIMER_LENGTH = 30000;
+const uint16_t CHECK_STATUS_TIMER_LENGTH = 10000;
 const uint16_t ALERT_TIMER_LENGTH = 5000;
 const uint16_t LAST_SIGNAL_TIMER = 15000;
 
-enum stateList {TURN_ON, WAITING_TO_STARTUP, STARTUP, DIAGNOSTICS, MALFUNCTION, IDLE, TEMP_CHECK, LOCATION_CHECK};
+enum stateList {TURN_ON, WAITING_TO_STARTUP, STARTUP, DIAGNOSTICS, MALFUNCTION, IDLE, TEMP_CHECK, LOCATION_CHECK, BATTERY_LEVEL_CHECK_IDLE, ALERT_INIT, ALERT, BROADCAST_ALERT, STATUS_CHECK_IDLE, STATUS_CHECK_ALERT, LAST_BROADCAST, BATTERY_LEVEL_CHECK_ALERT};
 
 /////// USER DEFINED VARIABLES
 RUI_TIMER_ST tempCheckTimer;
@@ -25,6 +31,7 @@ RUI_TIMER_ST locationCheckTimer;
 RUI_TIMER_ST batteryLevelCheckTimer;
 RUI_TIMER_ST alertTimer;
 RUI_TIMER_ST lastSignalTimer;
+RUI_TIMER_ST checkStatusTimer;
 bool tempCheckTimerTriggered = false;
 bool startTimerTriggered = false;
 bool diagnosticsTimerTriggered = false;
@@ -32,6 +39,8 @@ bool locationCheckTimerTriggered = false;
 bool batteryLevelCheckTimerTriggered = false;
 bool alertTimerTriggered = false;
 bool lastSignalTimerTriggered = false;
+bool checkStatusTimerTriggered = false;
+bool workModeEnabled = false;
 float temp = 0.0;
 float humidity = 0.0;
 
@@ -92,6 +101,10 @@ void lastSignalTimerCallback(void) {
 	lastSignalTimerTriggered = true;
 }
 
+void checkStatusTimerCallback(void) {
+	checkStatusTimerTriggered = true;
+}
+
 void main(void)
 {
 	//system init 
@@ -132,11 +145,19 @@ void main(void)
 				rui_timer_init(&locationCheckTimer, locationCheckTimerCallback);
 				rui_timer_setvalue(&locationCheckTimer, LOCATION_CHECK_TIMER_LENGTH);
 				rui_timer_start(&locationCheckTimer);
+				batteryLevelCheckTimer.timer_mode = RUI_TIMER_MODE_REPEATED;
+				rui_timer_init(&batteryLevelCheckTimer, batteryLevelCheckTimerCallback);
+				rui_timer_setvalue(&batteryLevelCheckTimer, BATTERY_LEVEL_CHECK_TIMER_LENGTH);
+				rui_timer_start(&batteryLevelCheckTimer);
+				checkStatusTimer.timer_mode = RUI_TIMER_MODE_REPEATED;
+				rui_timer_init(&checkStatusTimer, checkStatusTimerCallback);
+				rui_timer_setvalue(&checkStatusTimer, CHECK_STATUS_TIMER_LENGTH);
+				rui_timer_start(&checkStatusTimer);
 				state = DIAGNOSTICS;
 			case DIAGNOSTICS:
 				// In this state we run the diagnostics
 				RUI_LOG_PRINTF("Running diagnostics...");
-				if (true) { // TODO: implement the actual diagnostics test
+				if (diagnosticsPassPlease) { // TODO: implement the actual diagnostics test
 					RUI_LOG_PRINTF("Diagnostics passed.");
 					state = IDLE;
 				}
@@ -160,6 +181,12 @@ void main(void)
 				else if (locationCheckTimerTriggered) {
 					state = LOCATION_CHECK;
 				}
+				else if (batteryLevelCheckTimerTriggered) {
+					state = BATTERY_LEVEL_CHECK_IDLE;
+				}
+				else if (checkStatusTimerTriggered) {
+					state = STATUS_CHECK_IDLE;
+				}
 				break;
 			case TEMP_CHECK:
 				RUI_LOG_PRINTF("Checking the temperature...");
@@ -169,7 +196,70 @@ void main(void)
 			case LOCATION_CHECK:
 				RUI_LOG_PRINTF("Checking the location for movement...");
 				locationCheckTimerTriggered = false;
+				if (alertOnPlease) { // TODO: have this changed for the correct update of the alarm
+					state = ALERT_INIT;
+				}
+				else {
+					state = IDLE;
+				}
+				break;
+			case BATTERY_LEVEL_CHECK_IDLE:
+				RUI_LOG_PRINTF("Checking the battery level...");
+				batteryLevelCheckTimerTriggered = false;
 				state = IDLE;
+				break;
+			case STATUS_CHECK_IDLE:
+				RUI_LOG_PRINTF("Checking the alert / work mode status...");
+				checkStatusTimerTriggered = false;
+				state = IDLE;
+				break;
+			case ALERT_INIT:
+				RUI_LOG_PRINTF("Entering alert mode...");
+				alertTimer.timer_mode = RUI_TIMER_MODE_REPEATED;
+				rui_timer_init(&alertTimer, alertTimerCallback);
+				rui_timer_setvalue(&alertTimer, ALERT_TIMER_LENGTH);
+				rui_timer_start(&alertTimer);
+				state = BROADCAST_ALERT;
+				break;
+			case BROADCAST_ALERT:
+				RUI_LOG_PRINTF("Broadcasting alert...");
+				alertTimerTriggered = false;
+				state = ALERT;
+				break;
+			case ALERT:
+				if (alertTimerTriggered) {
+					state = BROADCAST_ALERT;
+				}
+				else if (checkStatusTimerTriggered) {
+					state = STATUS_CHECK_ALERT;
+				}
+				else if (batteryLevelCheckTimerTriggered) {
+					state = BATTERY_LEVEL_CHECK_ALERT;
+				}
+				break;
+			case STATUS_CHECK_ALERT:
+				RUI_LOG_PRINTF("Checking the alert / work mode status...");
+				checkStatusTimerTriggered = false;
+				if (!alarmOnPlease) { // TODO: change this to reflect the actual status of the alarm
+					state = IDLE;
+				}
+				else {
+					state = ALERT;
+				}
+				break;
+			case BATTERY_LEVEL_CHECK_ALERT:
+				RUI_LOG_PRINTF("Checking the battery level...");
+				batteryLevelCheckTimerTriggered = false;
+				if (batteryLowPlease) { // TODO: actually check if the battery level is low
+					state = LAST_BROADCAST;
+				}
+				else {
+					state = ALERT;
+				}
+				break;
+			case LAST_BROADCAST:
+				RUI_LOG_PRINTF("Final broadcast mode. Standing by for 24 hours.");
+				RUI_LOG_PRINTF("Final broadcast sent. I'm dying...");
 				break;
 			default:
 				RUI_LOG_PRINTF("An error occurred!");
