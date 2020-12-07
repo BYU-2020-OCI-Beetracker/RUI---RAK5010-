@@ -8,7 +8,7 @@ RUI_I2C_ST st = {0};
 
 ////// FOR TESTING PURPOSES ONLY
 bool alertOnPlease = false;
-bool diagnosticsPassPlease = false;
+bool diagnosticsPassPlease = true;
 bool batteryLowPlease = false;
 
 /////// USER DEFINED CONSTANTS
@@ -165,6 +165,7 @@ void main(void)
 					RUI_LOG_PRINTF("Diagnostics failed.");
 					state = MALFUNCTION;
 				}
+				diagnosticsTimerTriggered = false;
 				break;
 			case MALFUNCTION:
 				// In this state the diagnostics have failed.
