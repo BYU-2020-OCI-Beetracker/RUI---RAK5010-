@@ -240,7 +240,7 @@ void main(void)
 			case STATUS_CHECK_ALERT:
 				RUI_LOG_PRINTF("Checking the alert / work mode status...");
 				checkStatusTimerTriggered = false;
-				if (!alarmOnPlease) { // TODO: change this to reflect the actual status of the alarm
+				if (!alertOnPlease) { // TODO: change this to reflect the actual status of the alarm
 					state = IDLE;
 				}
 				else {
