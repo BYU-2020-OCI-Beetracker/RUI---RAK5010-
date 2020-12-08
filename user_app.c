@@ -147,7 +147,7 @@ void main(void)
 			case MALFUNCTION:
 				// In this state the diagnostics have failed.
 				RUI_LOG_PRINTF("Sending malfunction notification");
-				at_parse("at+get_config=device:status");
+				rui_cellular_send("ATI");
 				// RUI_LOG_PRINTF("Cellular response: %s", at_rsp);
 				state = IDLE;
 				break;
@@ -170,9 +170,11 @@ void main(void)
 				break;
 			case TEMP_CHECK:
 				RUI_LOG_PRINTF("Checking the temperature...");
-				//int responseCode = SHTC3_GetTempAndHumi(&temp, &humidity);
-				RUI_LOG_PRINTF("Temp data: %f, Humidity data: %f", temp, humidity);
-				// RUI_LOG_PRINTF("Response code: %d", responseCode);
+				int responseCode = SHTC3_GetTempAndHumi(&temp, &humidity);
+				int tempInt = (int)temp;
+				int humidityInt = (int)humidity;
+				RUI_LOG_PRINTF("Temp data: %d, Humidity data: %d", tempInt, humidityInt);
+				RUI_LOG_PRINTF("Response code: %d", responseCode);
 				tempCheckTimerTriggered = false;
 				state = IDLE;
 				break;
