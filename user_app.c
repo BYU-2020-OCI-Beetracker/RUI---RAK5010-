@@ -7,7 +7,7 @@
 RUI_I2C_ST st = {0};
 
 ////// FOR TESTING PURPOSES ONLY
-bool alertOnPlease = true;
+bool alertOnPlease = false;
 bool diagnosticsPassPlease = true;
 bool batteryLowPlease = false;
 
@@ -191,6 +191,9 @@ void main(void)
 				break;
 			case TEMP_CHECK:
 				RUI_LOG_PRINTF("Checking the temperature...");
+				int responseCode = SHTC3_GetTempAndHumi(&temp, &humidity);
+				RUI_LOG_PRINTF("Temp data: %f, Humidity data: %f", temp, humidity);
+				RUI_LOG_PRINTF("Response code: %d", responseCode);
 				tempCheckTimerTriggered = false;
 				state = IDLE;
 				break;
