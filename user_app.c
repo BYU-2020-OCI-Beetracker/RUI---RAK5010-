@@ -25,7 +25,7 @@ enum stateList {TURN_ON, WAITING_TO_STARTUP, STARTUP, DIAGNOSTICS, MALFUNCTION, 
 RUI_TIMER_ST tempStatusTimer;
 RUI_TIMER_ST startTimer;
 RUI_TIMER_ST diagnosticsBatteryTimer;
-RUI_TIMER_ST startocationCheckTimer;
+RUI_TIMER_ST startLocationCheckTimer;
 RUI_TIMER_ST alertTimer;
 RUI_TIMER_ST lastSignalTimer;
 bool tempCheckTimerTriggered = false;
