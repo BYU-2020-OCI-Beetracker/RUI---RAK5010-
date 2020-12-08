@@ -23,7 +23,6 @@ enum stateList {TURN_ON, WAITING_TO_STARTUP, STARTUP, DIAGNOSTICS, MALFUNCTION, 
 
 /////// USER DEFINED VARIABLES
 RUI_TIMER_ST tempStatusTimer;
-RUI_TIMER_ST startTimer;
 RUI_TIMER_ST diagnosticsBatteryTimer;
 RUI_TIMER_ST startLocationCheckTimer;
 RUI_TIMER_ST alertTimer;
@@ -37,8 +36,8 @@ bool alertTimerTriggered = false;
 bool lastSignalTimerTriggered = false;
 bool checkStatusTimerTriggered = false;
 bool workModeEnabled = false;
-float temp = 0.0;
-float humidity = 0.0;
+float temp = 999.0;
+float humidity = 999.0;
 
 void sensor_on(void)
 {
@@ -107,9 +106,10 @@ void main(void)
 			case TURN_ON:
 				// In this state we will start the timer to wait for startup
 				RUI_LOG_PRINTF("Waiting to boot up");
-				rui_timer_init(&startTimer, startTimerCallback);
-				rui_timer_setvalue(&startTimer, INIT_TIMER_LENGTH * 2.0);
-				rui_timer_start(&startTimer);
+				startLocationCheckTimer.timer_mode = RUI_TIMER_MODE_REPEATED;
+				rui_timer_init(&startLocationCheckTimer, startLocationCheckTimerCallback);
+				rui_timer_setvalue(&startLocationCheckTimer, START_LOCATION_CHECK_TIMER_LENGTH * 2.0);
+				rui_timer_start(&startLocationCheckTimer);
 				state = WAITING_TO_STARTUP;
 				break;
 			case WAITING_TO_STARTUP:
@@ -130,11 +130,6 @@ void main(void)
 				rui_timer_setvalue(&diagnosticsBatteryTimer, DIAGNOSTICS_BATTERY_TIMER_LENGTH * 2.0);
 				rui_timer_start(&diagnosticsBatteryTimer);
 				
-				startLocationCheckTimer.timer_mode = RUI_TIMER_MODE_REPEATED;
-				rui_timer_init(&startLocationCheckTimer, startLocationCheckTimerCallback);
-				rui_timer_setvalue(&startLocationCheckTimer, START_LOCATION_CHECK_TIMER_LENGTH * 2.0);
-				rui_timer_start(&startLocationCheckTimer);
-				
 				state = DIAGNOSTICS;
 			case DIAGNOSTICS:
 				// In this state we run the diagnostics
@@ -152,15 +147,15 @@ void main(void)
 			case MALFUNCTION:
 				// In this state the diagnostics have failed.
 				RUI_LOG_PRINTF("Sending malfunction notification");
-				at_parse("at+get_config=device:status");
-				RUI_LOG_PRINTF("Cellular response: %s", at_rsp);
+				RUI_LOG_PRINTF(at_parse("at+get_config=device:status"));
+				// RUI_LOG_PRINTF("Cellular response: %s", at_rsp);
 				state = IDLE;
 				break;
 			case IDLE:
 				if (tempCheckTimerTriggered) {
 					state = TEMP_CHECK;
 				}
-				else if (diagnosticsBatteryTimerTriggered) {
+				else if (diagnosticsTimerTriggered) {
 					state = DIAGNOSTICS;
 				}
 				else if (locationCheckTimerTriggered) {
@@ -177,7 +172,7 @@ void main(void)
 				RUI_LOG_PRINTF("Checking the temperature...");
 				//int responseCode = SHTC3_GetTempAndHumi(&temp, &humidity);
 				RUI_LOG_PRINTF("Temp data: %f, Humidity data: %f", temp, humidity);
-				RUI_LOG_PRINTF("Response code: %d", responseCode);
+				// RUI_LOG_PRINTF("Response code: %d", responseCode);
 				tempCheckTimerTriggered = false;
 				state = IDLE;
 				break;
