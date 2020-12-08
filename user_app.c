@@ -145,10 +145,12 @@ void main(void)
 				rui_timer_init(&locationCheckTimer, locationCheckTimerCallback);
 				rui_timer_setvalue(&locationCheckTimer, LOCATION_CHECK_TIMER_LENGTH * 2.0);
 				rui_timer_start(&locationCheckTimer);
+				/*
 				batteryLevelCheckTimer.timer_mode = RUI_TIMER_MODE_REPEATED;
 				rui_timer_init(&batteryLevelCheckTimer, batteryLevelCheckTimerCallback);
 				rui_timer_setvalue(&batteryLevelCheckTimer, BATTERY_LEVEL_CHECK_TIMER_LENGTH * 2.0);
 				rui_timer_start(&batteryLevelCheckTimer);
+				*/
 				checkStatusTimer.timer_mode = RUI_TIMER_MODE_REPEATED;
 				rui_timer_init(&checkStatusTimer, checkStatusTimerCallback);
 				rui_timer_setvalue(&checkStatusTimer, CHECK_STATUS_TIMER_LENGTH * 2.0);
