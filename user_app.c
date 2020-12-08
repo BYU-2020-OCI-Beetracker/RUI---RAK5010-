@@ -8,15 +8,14 @@ RUI_I2C_ST st = {0};
 
 ////// FOR TESTING PURPOSES ONLY
 bool alertOnPlease = false;
-bool diagnosticsPassPlease = true;
+bool diagnosticsPassPlease = false;
 bool batteryLowPlease = false;
 
 /////// USER DEFINED CONSTANTS
 const uint16_t INIT_TIMER_LENGTH = 5000;
 const uint16_t TEMP_CHECK_TIMER_LENGTH = 5000;
-const uint16_t DIAGNOSTICS_TIMER_LENGTH = 30000;
+const uint16_t DIAGNOSTICS_BATTERY_TIMER_LENGTH = 30000;
 const uint16_t LOCATION_CHECK_TIMER_LENGTH = 10000;
-const uint16_t BATTERY_LEVEL_CHECK_TIMER_LENGTH = 30000;
 const uint16_t CHECK_STATUS_TIMER_LENGTH = 10000;
 const uint16_t ALERT_TIMER_LENGTH = 5000;
 const uint16_t LAST_SIGNAL_TIMER = 15000;
@@ -26,9 +25,8 @@ enum stateList {TURN_ON, WAITING_TO_STARTUP, STARTUP, DIAGNOSTICS, MALFUNCTION, 
 /////// USER DEFINED VARIABLES
 RUI_TIMER_ST tempCheckTimer;
 RUI_TIMER_ST startTimer;
-RUI_TIMER_ST diagnosticsTimer;
+RUI_TIMER_ST diagnosticsBatteryTimer;
 RUI_TIMER_ST locationCheckTimer;
-RUI_TIMER_ST batteryLevelCheckTimer;
 RUI_TIMER_ST alertTimer;
 RUI_TIMER_ST lastSignalTimer;
 RUI_TIMER_ST checkStatusTimer;
@@ -81,16 +79,13 @@ void startTimerCallback(void) {
 	startTimerTriggered = true;
 }
 
-void diagnosticsTimerCallback(void) {
+void diagnosticsBatteryTimerCallback(void) {
 	diagnosticsTimerTriggered = true;
+	batteryLevelCheckTimerTriggered = true;
 }
 
 void locationCheckTimerCallback(void) {
 	locationCheckTimerTriggered = true;
-}
-
-void batteryLevelCheckTimerCallback(void) {
-	batteryLevelCheckTimerTriggered = true;
 }
 
 void alertTimerCallback(void) {
@@ -137,20 +132,17 @@ void main(void)
 				rui_timer_init(&tempCheckTimer, tempCheckTimerCallback);
 				rui_timer_setvalue(&tempCheckTimer, TEMP_CHECK_TIMER_LENGTH * 2.0);
 				rui_timer_start(&tempCheckTimer);
-				diagnosticsTimer.timer_mode = RUI_TIMER_MODE_REPEATED;
-				rui_timer_init(&diagnosticsTimer, diagnosticsTimerCallback);
-				rui_timer_setvalue(&diagnosticsTimer, DIAGNOSTICS_TIMER_LENGTH * 2.0);
-				rui_timer_start(&diagnosticsTimer);
+				
+				diagnosticsBatteryTimer.timer_mode = RUI_TIMER_MODE_REPEATED;
+				rui_timer_init(&diagnosticsBatteryTimer, diagnosticsBatteryTimerCallback);
+				rui_timer_setvalue(&diagnosticsBatteryTimer, DIAGNOSTICS_BATTERY_TIMER_LENGTH * 2.0);
+				rui_timer_start(&diagnosticsBatteryTimer);
+				
 				locationCheckTimer.timer_mode = RUI_TIMER_MODE_REPEATED;
 				rui_timer_init(&locationCheckTimer, locationCheckTimerCallback);
 				rui_timer_setvalue(&locationCheckTimer, LOCATION_CHECK_TIMER_LENGTH * 2.0);
 				rui_timer_start(&locationCheckTimer);
-				/*
-				batteryLevelCheckTimer.timer_mode = RUI_TIMER_MODE_REPEATED;
-				rui_timer_init(&batteryLevelCheckTimer, batteryLevelCheckTimerCallback);
-				rui_timer_setvalue(&batteryLevelCheckTimer, BATTERY_LEVEL_CHECK_TIMER_LENGTH * 2.0);
-				rui_timer_start(&batteryLevelCheckTimer);
-				*/
+				
 				checkStatusTimer.timer_mode = RUI_TIMER_MODE_REPEATED;
 				rui_timer_init(&checkStatusTimer, checkStatusTimerCallback);
 				rui_timer_setvalue(&checkStatusTimer, CHECK_STATUS_TIMER_LENGTH * 2.0);
@@ -172,13 +164,15 @@ void main(void)
 			case MALFUNCTION:
 				// In this state the diagnostics have failed.
 				RUI_LOG_PRINTF("Sending malfunction notification");
+				at_parse("at+get_config=device:status");
+				RUI_LOG_PRINTF("Cellular response: %s", at_rsp);
 				state = IDLE;
 				break;
 			case IDLE:
 				if (tempCheckTimerTriggered) {
 					state = TEMP_CHECK;
 				}
-				else if (diagnosticsTimerTriggered) {
+				else if (diagnosticsBatteryTimerTriggered) {
 					state = DIAGNOSTICS;
 				}
 				else if (locationCheckTimerTriggered) {
@@ -193,7 +187,7 @@ void main(void)
 				break;
 			case TEMP_CHECK:
 				RUI_LOG_PRINTF("Checking the temperature...");
-				int responseCode = SHTC3_GetTempAndHumi(&temp, &humidity);
+				//int responseCode = SHTC3_GetTempAndHumi(&temp, &humidity);
 				RUI_LOG_PRINTF("Temp data: %f, Humidity data: %f", temp, humidity);
 				RUI_LOG_PRINTF("Response code: %d", responseCode);
 				tempCheckTimerTriggered = false;
