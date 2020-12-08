@@ -147,7 +147,7 @@ void main(void)
 			case MALFUNCTION:
 				// In this state the diagnostics have failed.
 				RUI_LOG_PRINTF("Sending malfunction notification");
-				RUI_LOG_PRINTF(at_parse("at+get_config=device:status"));
+				at_parse("at+get_config=device:status");
 				// RUI_LOG_PRINTF("Cellular response: %s", at_rsp);
 				state = IDLE;
 				break;
