@@ -252,28 +252,5 @@ void main(void)
 		}
 		rui_running();
 	}
-	    /*
-        //do your work here, then call rui_device_sleep(1) to sleep
-	SHTC3_GetTempAndHumi(&temp,&humidity);
-	RUI_LOG_PRINTF("temperature = %f", temp);
-        RUI_LOG_PRINTF("humidity = %f", humidity);
-	    if (temp > 1) {
-		RUI_LOG_PRINTF("The temperature variable has been assigned correctly");
-	    }
-	    else {
-		    RUI_LOG_PRINTF("The temperature variable was NOT assigned correctly; it is still 0");
-	    }
-	    if (humidity > 1) {
-		    RUI_LOG_PRINTF("The humidity variable has been assigned correctly");
-	    }
-	    else {
-		    RUI_LOG_PRINTF("The humidity variable was NOT assigned correctly; it is still 0");
-	    }
-	//RUI_LOG_PRINTF("temperature = "NRF_LOG_FLOAT_MARKER"",NRF_LOG_FLOAT(temp));
-        //RUI_LOG_PRINTF("humidity = "NRF_LOG_FLOAT_MARKER"",NRF_LOG_FLOAT(humidity));
-        //RUI_LOG_PRINTF(at_parse("at+get_config=device:status"));
-        rui_device_sleep(1);
-        //here run system work and do not modify
-        rui_running();
-	*/
+	  
 }
