@@ -7,7 +7,7 @@
 RUI_I2C_ST st = {0};
 
 ////// FOR TESTING PURPOSES ONLY
-bool alertOnPlease = false;
+bool alertOnPlease = true;
 bool diagnosticsPassPlease = true;
 bool batteryLowPlease = false;
 
@@ -121,7 +121,7 @@ void main(void)
 				// In this state we will start the timer to wait for startup
 				RUI_LOG_PRINTF("Waiting to boot up");
 				rui_timer_init(&startTimer, startTimerCallback);
-				rui_timer_setvalue(&startTimer, INIT_TIMER_LENGTH);
+				rui_timer_setvalue(&startTimer, INIT_TIMER_LENGTH * 2.0);
 				rui_timer_start(&startTimer);
 				state = WAITING_TO_STARTUP;
 				break;
@@ -135,23 +135,23 @@ void main(void)
 				// In this state we will begin all of the timers for the sensors
 				tempCheckTimer.timer_mode = RUI_TIMER_MODE_REPEATED;
 				rui_timer_init(&tempCheckTimer, tempCheckTimerCallback);
-				rui_timer_setvalue(&tempCheckTimer, TEMP_CHECK_TIMER_LENGTH);
+				rui_timer_setvalue(&tempCheckTimer, TEMP_CHECK_TIMER_LENGTH * 2.0);
 				rui_timer_start(&tempCheckTimer);
 				diagnosticsTimer.timer_mode = RUI_TIMER_MODE_REPEATED;
 				rui_timer_init(&diagnosticsTimer, diagnosticsTimerCallback);
-				rui_timer_setvalue(&diagnosticsTimer, DIAGNOSTICS_TIMER_LENGTH);
+				rui_timer_setvalue(&diagnosticsTimer, DIAGNOSTICS_TIMER_LENGTH * 2.0);
 				rui_timer_start(&diagnosticsTimer);
 				locationCheckTimer.timer_mode = RUI_TIMER_MODE_REPEATED;
 				rui_timer_init(&locationCheckTimer, locationCheckTimerCallback);
-				rui_timer_setvalue(&locationCheckTimer, LOCATION_CHECK_TIMER_LENGTH);
+				rui_timer_setvalue(&locationCheckTimer, LOCATION_CHECK_TIMER_LENGTH * 2.0);
 				rui_timer_start(&locationCheckTimer);
 				batteryLevelCheckTimer.timer_mode = RUI_TIMER_MODE_REPEATED;
 				rui_timer_init(&batteryLevelCheckTimer, batteryLevelCheckTimerCallback);
-				rui_timer_setvalue(&batteryLevelCheckTimer, BATTERY_LEVEL_CHECK_TIMER_LENGTH);
+				rui_timer_setvalue(&batteryLevelCheckTimer, BATTERY_LEVEL_CHECK_TIMER_LENGTH * 2.0);
 				rui_timer_start(&batteryLevelCheckTimer);
 				checkStatusTimer.timer_mode = RUI_TIMER_MODE_REPEATED;
 				rui_timer_init(&checkStatusTimer, checkStatusTimerCallback);
-				rui_timer_setvalue(&checkStatusTimer, CHECK_STATUS_TIMER_LENGTH);
+				rui_timer_setvalue(&checkStatusTimer, CHECK_STATUS_TIMER_LENGTH * 2.0);
 				rui_timer_start(&checkStatusTimer);
 				state = DIAGNOSTICS;
 			case DIAGNOSTICS:
@@ -218,7 +218,7 @@ void main(void)
 				RUI_LOG_PRINTF("Entering alert mode...");
 				alertTimer.timer_mode = RUI_TIMER_MODE_REPEATED;
 				rui_timer_init(&alertTimer, alertTimerCallback);
-				rui_timer_setvalue(&alertTimer, ALERT_TIMER_LENGTH);
+				rui_timer_setvalue(&alertTimer, ALERT_TIMER_LENGTH * 2.0);
 				rui_timer_start(&alertTimer);
 				state = BROADCAST_ALERT;
 				break;
