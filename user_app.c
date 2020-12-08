@@ -3,6 +3,7 @@
 #include "opt3001.h"
 #include "shtc3.h"
 #include "lps22hb.h"
+#include "inner.h"
 
 RUI_I2C_ST st = {0};
 
@@ -12,24 +13,21 @@ bool diagnosticsPassPlease = false;
 bool batteryLowPlease = false;
 
 /////// USER DEFINED CONSTANTS
-const uint16_t INIT_TIMER_LENGTH = 5000;
-const uint16_t TEMP_CHECK_TIMER_LENGTH = 5000;
+const uint16_t TEMP_STATUS_TIMER_LENGTH = 5000;
 const uint16_t DIAGNOSTICS_BATTERY_TIMER_LENGTH = 30000;
-const uint16_t LOCATION_CHECK_TIMER_LENGTH = 10000;
-const uint16_t CHECK_STATUS_TIMER_LENGTH = 10000;
+const uint16_t START_LOCATION_CHECK_TIMER_LENGTH = 10000;
 const uint16_t ALERT_TIMER_LENGTH = 5000;
 const uint16_t LAST_SIGNAL_TIMER = 15000;
 
 enum stateList {TURN_ON, WAITING_TO_STARTUP, STARTUP, DIAGNOSTICS, MALFUNCTION, IDLE, TEMP_CHECK, LOCATION_CHECK, BATTERY_LEVEL_CHECK_IDLE, ALERT_INIT, ALERT, BROADCAST_ALERT, STATUS_CHECK_IDLE, STATUS_CHECK_ALERT, LAST_BROADCAST, BATTERY_LEVEL_CHECK_ALERT};
 
 /////// USER DEFINED VARIABLES
-RUI_TIMER_ST tempCheckTimer;
+RUI_TIMER_ST tempStatusTimer;
 RUI_TIMER_ST startTimer;
 RUI_TIMER_ST diagnosticsBatteryTimer;
-RUI_TIMER_ST locationCheckTimer;
+RUI_TIMER_ST startocationCheckTimer;
 RUI_TIMER_ST alertTimer;
 RUI_TIMER_ST lastSignalTimer;
-RUI_TIMER_ST checkStatusTimer;
 bool tempCheckTimerTriggered = false;
 bool startTimerTriggered = false;
 bool diagnosticsTimerTriggered = false;
@@ -71,12 +69,9 @@ void sensor_off(void)
 
 /// USER DEFINED FUNCTIONS ///
 
-void tempCheckTimerCallback(void) {
+void tempStatusTimerCallback(void) {
 	tempCheckTimerTriggered = true;
-}
-
-void startTimerCallback(void) {
-	startTimerTriggered = true;
+	checkStatusTimerTriggered = true;
 }
 
 void diagnosticsBatteryTimerCallback(void) {
@@ -84,8 +79,9 @@ void diagnosticsBatteryTimerCallback(void) {
 	batteryLevelCheckTimerTriggered = true;
 }
 
-void locationCheckTimerCallback(void) {
+void startLocationCheckTimerCallback(void) {
 	locationCheckTimerTriggered = true;
+	startTimerTriggered = true;
 }
 
 void alertTimerCallback(void) {
@@ -94,10 +90,6 @@ void alertTimerCallback(void) {
 
 void lastSignalTimerCallback(void) {
 	lastSignalTimerTriggered = true;
-}
-
-void checkStatusTimerCallback(void) {
-	checkStatusTimerTriggered = true;
 }
 
 void main(void)
@@ -128,25 +120,21 @@ void main(void)
 				break;
 			case STARTUP:
 				// In this state we will begin all of the timers for the sensors
-				tempCheckTimer.timer_mode = RUI_TIMER_MODE_REPEATED;
-				rui_timer_init(&tempCheckTimer, tempCheckTimerCallback);
-				rui_timer_setvalue(&tempCheckTimer, TEMP_CHECK_TIMER_LENGTH * 2.0);
-				rui_timer_start(&tempCheckTimer);
+				tempStatusTimer.timer_mode = RUI_TIMER_MODE_REPEATED;
+				rui_timer_init(&tempStatusTimer, tempStatusTimerCallback);
+				rui_timer_setvalue(&tempStatusTimer, TEMP_STATUS_TIMER_LENGTH * 2.0);
+				rui_timer_start(&tempStatusTimer);
 				
 				diagnosticsBatteryTimer.timer_mode = RUI_TIMER_MODE_REPEATED;
 				rui_timer_init(&diagnosticsBatteryTimer, diagnosticsBatteryTimerCallback);
 				rui_timer_setvalue(&diagnosticsBatteryTimer, DIAGNOSTICS_BATTERY_TIMER_LENGTH * 2.0);
 				rui_timer_start(&diagnosticsBatteryTimer);
 				
-				locationCheckTimer.timer_mode = RUI_TIMER_MODE_REPEATED;
-				rui_timer_init(&locationCheckTimer, locationCheckTimerCallback);
-				rui_timer_setvalue(&locationCheckTimer, LOCATION_CHECK_TIMER_LENGTH * 2.0);
-				rui_timer_start(&locationCheckTimer);
+				startLocationCheckTimer.timer_mode = RUI_TIMER_MODE_REPEATED;
+				rui_timer_init(&startLocationCheckTimer, startLocationCheckTimerCallback);
+				rui_timer_setvalue(&startLocationCheckTimer, START_LOCATION_CHECK_TIMER_LENGTH * 2.0);
+				rui_timer_start(&startLocationCheckTimer);
 				
-				checkStatusTimer.timer_mode = RUI_TIMER_MODE_REPEATED;
-				rui_timer_init(&checkStatusTimer, checkStatusTimerCallback);
-				rui_timer_setvalue(&checkStatusTimer, CHECK_STATUS_TIMER_LENGTH * 2.0);
-				rui_timer_start(&checkStatusTimer);
 				state = DIAGNOSTICS;
 			case DIAGNOSTICS:
 				// In this state we run the diagnostics
