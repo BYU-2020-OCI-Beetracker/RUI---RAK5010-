@@ -9,7 +9,7 @@ RUI_I2C_ST st = {0};
 
 ////// FOR TESTING PURPOSES ONLY
 bool alertOnPlease = false;
-bool diagnosticsPassPlease = false;
+bool diagnosticsPassPlease = true;
 bool batteryLowPlease = false;
 
 /////// USER DEFINED CONSTANTS
